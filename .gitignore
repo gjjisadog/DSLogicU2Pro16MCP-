@@ -1,0 +1,26 @@
+# Build directories and temporary outputs
+build/
+*.o
+*.obj
+*.exe.stackdump
+_tmp_*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Captures (raw large data)
+captures/*
+!captures/.gitkeep
+
+# Extraneous runtime sqlite
+runtime/*.sqlite*
+runtime/debugd*
