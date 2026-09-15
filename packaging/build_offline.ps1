@@ -110,9 +110,28 @@ if (Test-Path -LiteralPath $setupOutputDir) {
 }
 New-Item -ItemType Directory -Force -Path $setupOutputDir | Out-Null
 $setupExe = Join-Path $setupOutputDir "DSLogicU2Pro16MCP-Setup.exe"
-$vcVars = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-if (-not (Test-Path -LiteralPath $vcVars)) {
-    throw "MSVC x64 environment script not found: $vcVars"
+$programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+$vcVarsCandidates = @(
+    (Join-Path $programFilesX86 "Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"),
+    (Join-Path $programFilesX86 "Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"),
+    (Join-Path $programFilesX86 "Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat"),
+    (Join-Path $programFilesX86 "Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat")
+)
+$vcVars = $vcVarsCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $vcVars) {
+    $vsWhere = Join-Path $programFilesX86 "Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path -LiteralPath $vsWhere) {
+        $installationPath = (& $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1).Trim()
+        if ($installationPath) {
+            $candidate = Join-Path $installationPath "VC\Auxiliary\Build\vcvars64.bat"
+            if (Test-Path -LiteralPath $candidate) {
+                $vcVars = $candidate
+            }
+        }
+    }
+}
+if (-not $vcVars) {
+    throw "MSVC x64 environment script was not found. Install Visual Studio C++ build tools."
 }
 $compileCommand = "call `"$vcVars`" && rc.exe /nologo /fo `"$resourceObject`" `"$resourceFile`" && cl.exe /nologo /std:c++17 /EHsc /MT /O2 /DUNICODE /D_UNICODE /I`"$(Join-Path $repoRoot 'installer')`" /Fe:`"$setupExe`" `"$(Join-Path $repoRoot 'installer\Installer.cpp')`" `"$resourceObject`" /link /SUBSYSTEM:CONSOLE"
 & cmd.exe /d /s /c $compileCommand
