@@ -1,5 +1,9 @@
 # Build directories and temporary outputs
 build/
+dist/
+installer/bin/
+installer/obj/
+installer/payload.zip
 *.o
 *.obj
 *.exe.stackdump

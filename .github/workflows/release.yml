@@ -1,0 +1,60 @@
+name: Windows offline release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without the v prefix"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Build offline artifacts
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${env:GITHUB_REF_NAME}" -replace '^v', ''
+          }
+          .\packaging\build_offline.ps1 -Version $version -Clean
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "v${{ inputs.version }}"
+          } else {
+            $tag = $env:GITHUB_REF_NAME
+          }
+          $version = $tag -replace '^v', ''
+          $releaseDir = Join-Path "dist" "DSLogicU2Pro16MCP-v$version-windows-x64"
+          $assets = Get-ChildItem -LiteralPath $releaseDir -File | ForEach-Object { $_.FullName }
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag @assets --clobber
+          } else {
+            gh release create $tag @assets --generate-notes --title "DSLogic U2Pro16MCP $tag"
+          }

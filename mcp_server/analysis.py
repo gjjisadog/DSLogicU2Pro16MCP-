@@ -3,11 +3,30 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
+
+def _capture_path(capture_id_or_dir: str, base_dir: str) -> Path:
+    """Resolve a capture ID while keeping path-based access inside captures/."""
+
+    if not isinstance(capture_id_or_dir, str) or not capture_id_or_dir.strip():
+        raise ValueError("capture_id_or_dir must be a non-empty string")
+    root = Path(base_dir).expanduser().resolve()
+    candidate = Path(capture_id_or_dir).expanduser()
+    path = candidate if candidate.is_absolute() else root / candidate
+    path = path.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"Capture path must be inside {root}") from exc
+    return path
+
+
+def _valid_channel(channel: int) -> bool:
+    return isinstance(channel, int) and not isinstance(channel, bool) and 0 <= channel <= 15
+
+
 def load_capture(capture_id_or_dir: str, base_dir: str = "captures") -> Tuple[np.ndarray, Dict[str, Any], Path]:
-    p = Path(capture_id_or_dir)
+    p = _capture_path(capture_id_or_dir, base_dir)
     if not p.is_dir():
-        p = Path(base_dir) / capture_id_or_dir
-    if not p.exists():
         raise FileNotFoundError(f"Capture directory not found: {p}")
     json_path = p / "capture.json"
     bin_path = p / "capture.bin"
@@ -21,10 +40,12 @@ def load_capture(capture_id_or_dir: str, base_dir: str = "captures") -> Tuple[np
     return samples, meta, p
 
 def measure_pwm(capture_id_or_dir: str, channel: int = 0, base_dir: str = "captures") -> Dict[str, Any]:
-    if channel < 0 or channel > 15:
+    if not _valid_channel(channel):
         raise ValueError(f"Channel must be between 0 and 15, got {channel}")
     samples, meta, cap_dir = load_capture(capture_id_or_dir, base_dir)
     sample_rate_hz = meta.get("sample_rate_hz", 100_000_000)
+    if not isinstance(sample_rate_hz, (int, float)) or sample_rate_hz <= 0:
+        raise ValueError("Capture metadata contains an invalid sample_rate_hz")
     bit_signal = ((samples >> channel) & 1).astype(np.int8)
     num_ones = int(np.count_nonzero(bit_signal))
     if num_ones == 0:
@@ -113,10 +134,12 @@ def measure_pwm(capture_id_or_dir: str, channel: int = 0, base_dir: str = "captu
 def measure_deadtime(capture_id_or_dir: str, high_ch: int = 0, low_ch: int = 1, base_dir: str = "captures") -> Dict[str, Any]:
     if high_ch == low_ch:
         raise ValueError("high_ch and low_ch must be different channels")
-    if high_ch < 0 or high_ch > 15 or low_ch < 0 or low_ch > 15:
+    if not _valid_channel(high_ch) or not _valid_channel(low_ch):
         raise ValueError("Channels must be between 0 and 15")
     samples, meta, cap_dir = load_capture(capture_id_or_dir, base_dir)
     sample_rate_hz = meta.get("sample_rate_hz", 100_000_000)
+    if not isinstance(sample_rate_hz, (int, float)) or sample_rate_hz <= 0:
+        raise ValueError("Capture metadata contains an invalid sample_rate_hz")
     hs = ((samples >> high_ch) & 1).astype(np.int8)
     ls = ((samples >> low_ch) & 1).astype(np.int8)
     shoot_through_mask = (hs == 1) & (ls == 1)

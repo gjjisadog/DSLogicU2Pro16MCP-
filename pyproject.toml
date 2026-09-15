@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dslogic-u2pro16-mcp"
+version = "0.2.0"
+description = "Cross-agent MCP server for DreamSourceLab DSLogic U2Pro16"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp>=2.0.0,<3",
+  "numpy>=1.24.0,<3",
+]
+
+[project.scripts]
+dslogic-mcp = "mcp_server.server:main"
+
+[tool.setuptools.packages.find]
+include = ["mcp_server*"]
