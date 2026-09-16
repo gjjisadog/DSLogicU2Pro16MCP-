@@ -248,7 +248,7 @@ def _replace_codex_section(text: str, replacement: str | None) -> tuple[str, boo
             if start is None:
                 start = index
             continue
-        if start is not None:
+        if start is not None and section is not None:
             end = index
             break
 
@@ -262,7 +262,7 @@ def _replace_codex_section(text: str, replacement: str | None) -> tuple[str, boo
             if replacement:
                 new_text += replacement
             new_text += text[marker_match.end() :]
-            return new_text, True
+            return new_text, new_text != text
         if replacement is None:
             return text, False
         prefix = text
@@ -270,7 +270,8 @@ def _replace_codex_section(text: str, replacement: str | None) -> tuple[str, boo
             prefix += newline
         if prefix and not prefix.endswith(newline * 2):
             prefix += newline
-        return prefix + replacement, True
+        new_text = prefix + replacement
+        return new_text, new_text != text
 
     if end is None:
         end = len(lines)
@@ -280,7 +281,8 @@ def _replace_codex_section(text: str, replacement: str | None) -> tuple[str, boo
     if replacement:
         new_lines.append(replacement)
     new_lines.extend(lines[end:])
-    return "".join(new_lines), True
+    new_text = "".join(new_lines)
+    return new_text, new_text != text
 
 
 def _write_codex_config(
