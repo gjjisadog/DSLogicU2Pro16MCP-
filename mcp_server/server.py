@@ -24,6 +24,7 @@ try:
 except ImportError:  # pragma: no cover - compatibility with older SDKs
     from mcp.server.fastmcp import FastMCP as MCPServer
 
+from mcp_server import __version__
 from mcp_server.analysis import (
     measure_deadtime as analyze_deadtime,
     measure_pwm as analyze_pwm,
@@ -32,12 +33,13 @@ from mcp_server.config import (
     SERVER_NAME,
     application_root,
     config_preview,
+    dsh_patch,
     install_agent_configs,
     uninstall_agent_configs,
 )
 
 
-APP_VERSION = os.environ.get("DSLOGIC_VERSION", "0.2.0")
+APP_VERSION = os.environ.get("DSLOGIC_VERSION", __version__)
 APP_ROOT = application_root()
 CAPTURE_DIR = (APP_ROOT / "captures").resolve()
 CLI_PATH = Path(
@@ -282,6 +284,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--install", action="store_true", help="register this server in Agent configs")
     parser.add_argument("--uninstall", action="store_true", help="remove this server from Agent configs")
     parser.add_argument("--print-config", action="store_true", help="print generated host configuration")
+    parser.add_argument("--print-dsh-patch", action="store_true", help="print a DeepSeek Harness Cordis patch")
     parser.add_argument("--check", action="store_true", help="print a local installation health check")
     parser.add_argument(
         "--targets",
@@ -345,6 +348,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.print_config:
         _print_json(config_preview(app_root=args.app_root, executable=args.executable))
+        return 0
+
+    if args.print_dsh_patch:
+        print(json.dumps(dsh_patch(app_root=args.app_root, executable=args.executable), indent=2))
         return 0
 
     if args.check:

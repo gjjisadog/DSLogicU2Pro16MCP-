@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import unittest
@@ -8,9 +9,30 @@ from pathlib import Path
 class StdioSmokeTests(unittest.TestCase):
     def test_initialize_and_list_tools(self) -> None:
         root = Path(__file__).resolve().parents[1]
+        patch = json.loads(
+            subprocess.check_output(
+                [
+                    sys.executable, "-m", "mcp_server.server", "--print-dsh-patch",
+                    "--app-root", str(root),
+                ],
+                cwd=root,
+                text=True,
+                timeout=15,
+            )
+        )
+        (operation,) = patch
+        (plugin,) = operation["insert"]
+        self.assertEqual(plugin["id"], "mcp-dslogic-u2pro16")
+        self.assertEqual(plugin["name"], "@deepseek-ai/dsh-mcp-client")
+        config = plugin["config"]
+        self.assertEqual(config["serverName"], "dslogic-u2pro16")
+        self.assertEqual(config["transport"], "stdio")
+        self.assertEqual(config["command"], sys.executable)
+        self.assertEqual(config["env"], {"DSLOGIC_HOME": str(root)})
         process = subprocess.Popen(
-            [sys.executable, "-m", "mcp_server.server"],
-            cwd=root,
+            [config["command"], *config["args"]],
+            cwd=config["cwd"],
+            env={**os.environ, **config["env"]},
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

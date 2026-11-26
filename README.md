@@ -2,8 +2,8 @@
 
 DSLogic U2Pro16 MCP exposes DreamSourceLab logic-analyzer capture and PWM
 analysis through the standard Model Context Protocol (MCP). The same server
-works with Claude Code, ZCode, Codex, Zed, Cursor, OpenCode, and other clients
-that support MCP.
+works with Claude Code, ZCode, Codex, DeepSeek Harness (`dsh`), Zed, Cursor,
+OpenCode, and other clients that support MCP.
 
 The repository ships a Windows x64 native runtime because the bundled
 DSLogic driver backend uses WinUSB. Agent compatibility is cross-client;
@@ -108,6 +108,21 @@ ZCode and other clients supporting the `.agents` convention can use:
 
 See [docs/agent-compatibility.md](docs/agent-compatibility.md) for the
 configuration boundary and troubleshooting notes.
+
+### DeepSeek Harness (`dsh`)
+
+On the Windows PC connected to the analyzer, run these commands from the
+directory containing `dslogic-mcp.exe`:
+
+```powershell
+.\dslogic-mcp.exe --print-dsh-patch | Set-Content -Encoding ascii .\dslogic.cordis.yml
+dsh web --patch .\dslogic.cordis.yml
+```
+
+DSH loads the overlay through its built-in MCP client. The device check is
+available as `mcp__dslogic-u2pro16__logic_device_info`. See the
+[DSH configuration notes](docs/agent-compatibility.md#deepseek-harness) to use
+a source checkout or keep the registration across launches.
 
 ## Source development
 

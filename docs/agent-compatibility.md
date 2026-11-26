@@ -42,6 +42,27 @@ to:
 For a release bundle, the entry uses the absolute `dslogic-mcp.exe` path and
 does not require Python, NumPy, or the MCP package to be installed.
 
+## DeepSeek Harness
+
+Use `dslogic-mcp.exe --print-dsh-patch` to generate a Cordis overlay for
+`@deepseek-ai/dsh-mcp-client`. In a source checkout, activate the project's
+virtual environment and run `python -m mcp_server.server --print-dsh-patch`
+instead. The generated JSON is valid YAML and uses absolute paths, so the
+overlay can be loaded from any working directory.
+
+Save it as `dslogic.cordis.yml` and run `dsh web --patch dslogic.cordis.yml`.
+To load it on every launch of the Web profile, merge its single `insert`
+operation into the existing `profiles/web/cordis.patch.yml` under `DSH_HOME`
+(the default is `~/.dsh`). The Windows offline installer configures the hosts
+listed above. For DSH, use the overlay after installation.
+
+The stdio configuration starts the server on the same PC as DSH. Hardware
+capture uses the Windows CLI and requires WinUSB. DSH can also connect to an
+already running DSLogic MCP server via Streamable HTTP. In the Cordis entry's
+`config`, keep `serverName`, set `transport` to `streamable-http`, and set
+`url` to the MCP endpoint in place of the stdio fields. See the
+[DeepSeek Harness MCP client reference](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md).
+
 ## Local HTTP mode
 
 Some MCP hosts prefer a URL. Start the local server with:

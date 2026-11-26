@@ -70,7 +70,8 @@ def _entry(
         command = str(candidate)
         args: list[str] = []
     else:
-        command = str(Path(sys.executable).resolve())
+        # Keep the venv launcher path even when it points to a system Python.
+        command = str(Path(sys.executable).absolute())
         args = ["-m", "mcp_server.server"]
 
     # DSLOGIC_HOME makes the same definition work regardless of the host's
@@ -403,3 +404,24 @@ def config_preview(
         "entry": entry,
         "paths": {name: str(path) for name, path in config_paths().items()},
     }
+
+
+def dsh_patch(
+    *,
+    app_root: str | os.PathLike[str] | None = None,
+    executable: str | os.PathLike[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Return a Cordis overlay for DeepSeek Harness's official MCP client."""
+
+    entry = _entry(application_root(app_root), executable)
+    return [
+        {
+            "insert": [
+                {
+                    "id": f"mcp-{SERVER_NAME}",
+                    "name": "@deepseek-ai/dsh-mcp-client",
+                    "config": {"serverName": SERVER_NAME, "transport": "stdio", **entry},
+                }
+            ]
+        }
+    ]

@@ -70,8 +70,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $builtAppDir "dslogic-mcp.exe"))) {
 }
 Copy-Item -Path (Join-Path $builtAppDir "*") -Destination $portableDir -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "runtime") -Destination (Join-Path $portableDir "runtime") -Recurse -Force
-New-Item -ItemType Directory -Force -Path (Join-Path $portableDir "captures") | Out-Null
+$docsDir = Join-Path $portableDir "docs"
+New-Item -ItemType Directory -Force -Path (Join-Path $portableDir "captures"), $docsDir | Out-Null
 Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination (Join-Path $portableDir "README.md") -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot "docs\agent-compatibility.md") -Destination $docsDir -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot "installer\Install-DSLogicU2Pro16MCP.ps1") -Destination (Join-Path $portableDir "Install-DSLogicU2Pro16MCP.ps1") -Force
 
 Write-Host "[3/6] Adding package metadata and portable health check..." -ForegroundColor Cyan
